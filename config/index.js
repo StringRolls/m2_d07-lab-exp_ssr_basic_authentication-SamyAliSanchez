@@ -17,10 +17,32 @@ const favicon = require("serve-favicon");
 // https://www.npmjs.com/package/path
 const path = require("path");
 
+const session = require("express-session");
+const MongoStore = require("connect-mongo");
+const mongoose = require("mongoose");
+
 // Middleware configuration
 module.exports = (app) => {
+   app.set("trust proxy", 1);
   // In development environment the app logs
   app.use(logger("dev"));
+
+  app.use(
+    session({
+      secret: process.env.SESSION_SECRET || "cappuccino secret",
+      resave: true,
+      saveUninitialized: false,
+      cookie: {
+        sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
+        secure: process.env.NODE_ENV === "production",
+        httpOnly: true, //cookie caracteristic allows me to block cookies coming from anything that is not my client window
+        maxAge: 24 * 60 * 60 * 1000,
+      },
+      store: MongoStore.create({
+        mongoUrl: process.env.MONGO_URL || "mongoodb://localhost/default-db",
+      }),
+    })
+  );
 
   // To have access to `body` property in the request
   app.use(express.json());
